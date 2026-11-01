@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: prefetch-backend
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: classpath:serviceAccountKey.json
+  project-id: prefetch-campus
+
+# JWT Configuration
+jwt:
+  secret: "CHANGE_THIS_TO_A_SECURE_SECRET_KEY_AT_LEAST_256_BITS_LONG_FOR_HS256"
+  expiration: 86400000  # 24 hours in milliseconds
+
+# UPI Configuration
+upi:
+  payee-vpa: "campuscoop@okaxis"
+  payee-name: "PreFetch Campus Store"
+  currency: "INR"
+
+# CORS
+cors:
+  allowed-origins: "http://localhost:5173"
+
+logging:
+  level:
+    com.prefetch: DEBUG
+    org.springframework.security: DEBUG

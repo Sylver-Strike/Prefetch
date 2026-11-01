@@ -1,0 +1,41 @@
+# ── Dependencies ──
+node_modules/
+frontend/node_modules/
+
+# ── Build output ──
+frontend/dist/
+backend/target/
+
+# ── Environment ──
+.env
+.env.local
+.env.*.local
+frontend/.env
+backend/.env
+
+# ── Firebase ──
+backend/src/main/resources/serviceAccountKey.json
+
+# ── IDE ──
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──
+*.log
+npm-debug.log*
+
+# ── Maven ──
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd

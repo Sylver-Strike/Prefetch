@@ -1,0 +1,283 @@
+/* ── Login Page Styles ── */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background-color: var(--color-background);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Brand bar */
+.login-brand-bar {
+  background-color: var(--color-primary-container);
+  color: var(--color-surface);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-brand-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.login-brand-bolt {
+  background-color: var(--color-secondary-container);
+  color: var(--color-on-secondary);
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-brand-name {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.login-brand-pre,
+.login-brand-fetch {
+  font: var(--text-headline-sm);
+  letter-spacing: var(--text-headline-sm-ls);
+}
+
+.login-brand-pre { color: var(--color-surface); }
+.login-brand-fetch { color: var(--color-secondary-container); }
+
+.login-brand-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-on-primary-container);
+}
+
+/* Header */
+.login-header {
+  background-color: var(--color-surface-container-low);
+  padding: var(--space-md);
+}
+
+.login-header-tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+/* HoloCard wrap */
+.login-holocard-wrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-md) 0;
+  background-color: var(--color-surface-container-low);
+}
+
+/* Role tabs */
+.login-role-tabs {
+  padding: var(--space-md);
+  padding-bottom: 0;
+}
+
+.login-role-tabs-inner {
+  background-color: var(--color-surface-container);
+  padding: var(--space-xs);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xs);
+  border-radius: var(--radius-default);
+}
+
+.login-role-tab {
+  padding: var(--space-sm) var(--space-xs);
+  font: var(--text-label-md);
+  letter-spacing: var(--text-label-md-ls);
+  text-align: center;
+  border: none;
+  border-radius: var(--radius-default);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+}
+
+.login-role-tab.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Form area */
+.login-form-area {
+  padding: var(--space-md);
+}
+
+.login-form {
+  background-color: var(--color-surface-container-lowest);
+  padding: var(--space-md);
+  border-radius: var(--radius-default);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.login-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+  background-color: var(--color-surface-container-low);
+  padding: var(--space-sm);
+  border-radius: var(--radius-default);
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.login-field label {
+  color: var(--color-on-surface);
+}
+
+.login-input-wrap {
+  position: relative;
+}
+
+.login-input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--color-outline);
+}
+
+.login-auth-method {
+  background-color: var(--color-surface-container);
+  padding: var(--space-sm);
+  border-radius: var(--radius-default);
+}
+
+.login-auth-method-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-auth-method-btns {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.login-method-btn {
+  font: var(--text-mono-data);
+  padding: 2px var(--space-xs);
+  border: none;
+  border-radius: var(--radius-default);
+  cursor: pointer;
+  font-size: 12px;
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  transition: all var(--transition-fast);
+}
+
+.login-method-btn.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.login-info-box {
+  padding: var(--space-sm);
+  background-color: var(--color-surface-container-low);
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.login-warning-box {
+  padding: var(--space-sm);
+  background-color: var(--color-surface-container-high);
+  border-radius: var(--radius-default);
+}
+
+/* Security banner */
+.login-security-banner {
+  padding: var(--space-sm) var(--space-md);
+  margin: 0 var(--space-md) var(--space-md);
+  background-color: var(--color-surface-container-low);
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Live metrics */
+.login-metrics-bar {
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.login-metrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.login-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  text-align: center;
+}
+
+.login-metric {
+  background: rgba(255, 255, 255, 0.08);
+  padding: var(--space-xs);
+  border-radius: var(--radius-default);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toast */
+.login-toast {
+  position: fixed;
+  top: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-default);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font: var(--text-label-md);
+}

@@ -1,0 +1,122 @@
+/* ── Admin Dashboard Page ── */
+
+.admin-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+/* Metrics */
+.admin-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .admin-metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-metric-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+}
+
+/* Concurrency banner */
+.admin-concurrency-banner {
+  background-color: var(--color-primary-container);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.admin-concurrency-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Sections */
+.admin-section {
+  margin-bottom: var(--space-lg);
+}
+
+.admin-access-section,
+.admin-inventory-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pending approvals grid */
+.admin-pending-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-sm);
+}
+
+.admin-pending-card {
+  padding: var(--space-md);
+}
+
+/* Accounts table */
+.admin-accounts-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-default);
+}
+
+.admin-accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-body-sm);
+}
+
+.admin-accounts-table thead {
+  background-color: var(--color-surface-container);
+}
+
+.admin-accounts-table th {
+  padding: var(--space-sm);
+  text-align: left;
+  font: var(--text-label-sm);
+  letter-spacing: var(--text-label-sm-ls);
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.admin-accounts-table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-outline-variant);
+  vertical-align: middle;
+}
+
+.admin-accounts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-accounts-table tr:hover td {
+  background-color: var(--color-surface-container-low);
+}
+
+/* Restock drawer */
+.admin-restock-drawer {
+  background-color: var(--color-surface-container-low);
+  padding: var(--space-md);
+  border-radius: var(--radius-default);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--color-outline-variant);
+}
