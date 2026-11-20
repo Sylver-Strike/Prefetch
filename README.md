@@ -1,6 +1,7 @@
 # PreFetch — Campus eCommerce Platform
 
 > Zero-wait campus cooperative store. Pre-order textbooks, lab kits, uniforms and pick up in 30 seconds.
+>Designed for grading purposes only.Data is handled without encryption, so use dummy/test inputs only.
 
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 ![Frontend](https://img.shields.io/badge/frontend-React%2018%20%2B%20Vite%205-61dafb)
