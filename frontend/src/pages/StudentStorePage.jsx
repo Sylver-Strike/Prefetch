@@ -1,28 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useInventory } from '../context/InventoryContext';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import './StudentStorePage.css';
-
-// Demo catalog data — will be replaced by API calls in Phase 2 backend integration
-const CATALOG = [
-  { item_id: 'CS301-BK', name: 'Data Structures & Algorithms Lab Manual', category: 'Textbooks', department: 'Computer Science', stock: 14, price: 260, image_url: '', variants: ['Hardbound Spiral', 'Standard Glue'], sku: 'CS301-BK' },
-  { item_id: 'CS-APRN-M', name: 'CSE Department Lab Apron', category: 'Uniforms', department: 'Computer Science', stock: 22, price: 320, image_url: '', variants: ['S', 'M', 'L', 'XL'], sku: 'CS-APRN-M' },
-  { item_id: 'MECH-DRW-KIT', name: 'Engineering Drawing Precision Kit', category: 'Academic Kits', department: 'Mechanical', stock: 3, price: 580, image_url: '', variants: null, sku: 'MECH-DRW' },
-  { item_id: 'ECE-BREAD', name: 'Electronics Breadboard + Wire Kit', category: 'Lab Records', department: 'Electronics', stock: 0, price: 150, image_url: '', variants: ['Standard', 'Extended'], sku: 'ECE-BRD1' },
-  { item_id: 'GEN-PEN-SET', name: 'Technical Drawing Pen Set (0.1-0.8mm)', category: 'Stationery', department: 'General', stock: 48, price: 220, image_url: '', variants: null, sku: 'GEN-PENS' },
-  { item_id: 'BIO-LABCOAT', name: 'Bio-Safety Lab Coat (Class II)', category: 'Uniforms', department: 'Biotechnology', stock: 8, price: 450, image_url: '', variants: ['S', 'M', 'L', 'XL'], sku: 'BIO-LC2' },
-  { item_id: 'CS-ALGO-REF', name: 'CLRS — Introduction to Algorithms (4th Ed)', category: 'Textbooks', department: 'Computer Science', stock: 6, price: 860, image_url: '', variants: ['Paperback', 'Hardcover'], sku: 'CS-CLRS4' },
-  { item_id: 'GEN-CALC', name: 'Scientific Calculator FX-991EX', category: 'Stationery', department: 'General', stock: 31, price: 1200, image_url: '', variants: null, sku: 'GEN-CALC' },
-];
-
-const AI_BUNDLE = {
-  title: 'Semester 3 — Computer Science Complete Kit',
-  items: [CATALOG[0], CATALOG[1], CATALOG[4]],
-  originalPrice: 800,
-  bundlePrice: 680,
-};
 
 const CATEGORIES = ['All Items', 'Textbooks', 'Lab Records', 'Uniforms', 'Stationery', 'Academic Kits'];
 
@@ -85,19 +67,31 @@ function ProductCard({ product, onAdd }) {
 export default function StudentStorePage() {
   const { user, logout } = useAuth();
   const { items, addItem, removeItem, updateQty, clearCart, addBundle, summary } = useCart();
+  const { inventory } = useInventory();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All Items');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
   const [orderToken, setOrderToken] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsRead, setNotificationsRead] = useState(false);
+
+  const AI_BUNDLE = useMemo(() => ({
+    title: 'Semester 3 — Computer Science Complete Kit',
+    items: [inventory[0], inventory[1], inventory[4]],
+    originalPrice: 800,
+    bundlePrice: 680,
+  }), [inventory]);
 
   const filteredCatalog = useMemo(() => {
-    return CATALOG.filter(item => {
+    return inventory.filter(item => {
       const matchCategory = activeCategory === 'All Items' || item.category === activeCategory;
-      const matchSearch = !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const query = searchQuery.trim().toLowerCase();
+      const matchSearch = !query || [item.name, item.sku, item.item_id, item.category]
+        .some(value => value.toLowerCase().includes(query));
       return matchCategory && matchSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, inventory, searchQuery]);
 
   const handleCheckout = () => {
     const token = `PF-${String(Math.floor(Math.random() * 9000 + 1000))}`;
@@ -128,9 +122,35 @@ export default function StudentStorePage() {
             <span className="badge" style={{ background: 'var(--color-secondary)', color: 'var(--color-on-secondary)', marginLeft: 8 }}>S3 2025-26</span>
           </div>
           <div className="store-header-right">
-            <button className="store-header-icon" title="Notifications">
+            <div className="store-notifications">
+              <button
+                className="store-header-icon"
+                title="Notifications"
+                aria-label="Toggle notifications"
+                aria-expanded={showNotifications}
+                onClick={() => setShowNotifications(value => !value)}
+              >
               <span className="material-symbols-outlined">notifications</span>
-            </button>
+                {!notificationsRead && <span className="store-notification-dot" />}
+              </button>
+              {showNotifications && (
+                <div className="store-notification-panel" role="region" aria-label="Store notifications">
+                  <div className="store-notification-heading">
+                    <strong className="text-label-md">Store updates</strong>
+                    <button type="button" className="text-label-sm" onClick={() => setNotificationsRead(true)}>Mark read</button>
+                  </div>
+                  {inventory.filter(item => item.stock <= item.threshold).length ? (
+                    inventory.filter(item => item.stock <= item.threshold).map(item => (
+                      <p className="store-notification-item text-body-sm" key={item.item_id}>
+                        {item.stock === 0 ? `${item.name} is out of stock.` : `${item.name} is low in stock (${item.stock} left).`}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="store-notification-item text-body-sm">No stock alerts right now.</p>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="store-header-avatar" title={user?.username}>
               {user?.username?.[0] || 'U'}
             </div>
@@ -219,7 +239,12 @@ export default function StudentStorePage() {
               <h2 className="text-title">
                 <span className="material-symbols-outlined" style={{ fontSize: 20, verticalAlign: 'text-bottom' }}>shopping_cart</span> Your Cart
               </h2>
-              <span className="badge" style={{ background: 'var(--color-surface-container)', color: 'var(--color-on-surface)' }}>{summary.itemCount} Items</span>
+              <div className="cart-header-actions">
+                <span className="badge" style={{ background: 'var(--color-surface-container)', color: 'var(--color-on-surface)' }}>{summary.itemCount} Items</span>
+                {items.length > 0 && (
+                  <button type="button" className="cart-clear-btn" onClick={clearCart}>Clear cart</button>
+                )}
+              </div>
             </div>
 
             {items.length === 0 ? (

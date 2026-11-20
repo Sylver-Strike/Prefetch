@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import HoloCard from '../components/ui/HoloCard/HoloCard';
+import GridScan from '../components/ui/GridScan/GridScan';
 import './LoginPage.css';
 
 const ROLES = [
@@ -52,6 +52,26 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      {/* GridScan WebGL background */}
+      <div className="login-gridscan-bg">
+        <GridScan
+          linesColor="#1e293b"
+          scanColor="#EA580C"
+          cells={10}
+          depth={4}
+          depthFade={0.5}
+          scanDuration={3.2}
+          scanDelay={2.0}
+          scanWidth={1.2}
+          trail={0.6}
+          glow={0.8}
+          shading={0.6}
+          reflection={0.25}
+          parallax={0.8}
+          clickEffect="ping"
+          points={true}
+        />
+      </div>
       {/* Toast notification */}
       {toast && (
         <div className="login-toast animate-slide-in" onAnimationEnd={() => setTimeout(() => setToast(null), 2000)}>
@@ -90,23 +110,6 @@ export default function LoginPage() {
           <p className="text-body-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
             Role-Based Access Control (RBAC) &amp; rapid pre-order dispatch station. Sign in below according to your designated campus authorization level.
           </p>
-        </div>
-
-        {/* HoloCard Accent */}
-        <div className="login-holocard-wrap">
-          <HoloCard
-            image="https://lh3.googleusercontent.com/aida-public/AB6AXuD3jSLnzdVSCCtPPiZS-8KamxYPMs_Bsrpa42nP4fZ9YcdgHPrJSwk94A6KBfkqG-PvhFVSSlVXbvDfWLtOUVEqat6H3lg7p5RHHozK2BE-hnC3R6x3jCZUbJzQfLAOhqgsi4fYqiwrVImMM_DJ4T6Y8hS8CF-3hq8wk6D-kFLB733qETek9aW534t8d9ownqWrqjSP92bqJ4CGf7TWc4gkmkQrp5vk-FYOAWqzJcuV"
-            alt="PreFetch Campus ID"
-            preset="gold"
-            foilColor="#131B2E"
-            width={220}
-            intensity={0.7}
-            edgeSparkle={0.6}
-            frame={5}
-            radius={8}
-            idle={true}
-            shadow={true}
-          />
         </div>
 
         {/* Role Tabs */}

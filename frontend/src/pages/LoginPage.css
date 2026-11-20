@@ -78,14 +78,6 @@
   margin-bottom: var(--space-xs);
 }
 
-/* HoloCard wrap */
-.login-holocard-wrap {
-  display: flex;
-  justify-content: center;
-  padding: var(--space-md) 0;
-  background-color: var(--color-surface-container-low);
-}
-
 /* Role tabs */
 .login-role-tabs {
   padding: var(--space-md);

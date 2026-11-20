@@ -267,3 +267,70 @@
   gap: var(--space-md);
   min-height: 300px;
 }
+
+.staff-order-card {
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid var(--color-outline-variant);
+  background: var(--color-surface-container-lowest);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.staff-order-card:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.staff-inline-message,
+.staff-discrepancy-note {
+  padding: var(--space-sm);
+  border-radius: var(--radius-default);
+  background: var(--color-surface-container-low);
+  color: var(--color-on-surface-variant);
+}
+
+.staff-discrepancy-note {
+  color: var(--color-error);
+}
+
+.staff-discrepancy-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-default);
+  background: var(--color-surface-container-lowest);
+}
+
+.staff-discrepancy-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .staff-receipt,
+  .staff-receipt * {
+    visibility: visible !important;
+  }
+
+  .staff-receipt {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border: 1px solid #777;
+    color: #000;
+    background: #fff;
+  }
+}

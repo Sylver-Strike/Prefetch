@@ -1,14 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useInventory } from '../context/InventoryContext';
 import './AdminDashboardPage.css';
-
-const DEMO_METRICS = [
-  { label: 'Active Students', value: '1,247', icon: 'school', color: 'var(--color-on-surface)' },
-  { label: 'Pending Auths', value: '12', icon: 'pending_actions', color: 'var(--color-secondary-container)' },
-  { label: 'Concurrency TPS', value: '342', icon: 'speed', color: 'var(--color-on-tertiary-container)' },
-  { label: 'Stock Alerts', value: '3', icon: 'warning', color: 'var(--color-error)' },
-];
 
 const PENDING_USERS = [
   { id: 'u1', name: 'Karthik R.', email: 'ME2025012@campus.edu', dept: 'Mechanical', role: 'STUDENT', date: '2025-10-14' },
@@ -23,17 +17,6 @@ const ACCOUNTS = [
   { id: 'a4', name: 'Devi P.', uid: 'ME2024077', dept: 'Mechanical', role: 'STUDENT', lastAuth: '2 days ago', status: 'IDLE' },
 ];
 
-const INVENTORY = [
-  { item_id: 'CS301-BK', name: 'DS Lab Manual', category: 'Textbooks', stock: 14, threshold: 5, price: 260, locked: false },
-  { item_id: 'CS-APRN-M', name: 'CSE Lab Apron', category: 'Uniforms', stock: 22, threshold: 8, price: 320, locked: false },
-  { item_id: 'MECH-DRW-KIT', name: 'Engg Drawing Kit', category: 'Academic Kits', stock: 3, threshold: 5, price: 580, locked: false },
-  { item_id: 'ECE-BREAD', name: 'Breadboard Kit', category: 'Lab Records', stock: 0, threshold: 5, price: 150, locked: true },
-  { item_id: 'GEN-PEN-SET', name: 'Technical Pen Set', category: 'Stationery', stock: 48, threshold: 10, price: 220, locked: false },
-  { item_id: 'BIO-LABCOAT', name: 'Bio Lab Coat', category: 'Uniforms', stock: 8, threshold: 5, price: 450, locked: false },
-  { item_id: 'CS-CLRS4', name: 'CLRS Algorithms', category: 'Textbooks', stock: 6, threshold: 5, price: 860, locked: false },
-  { item_id: 'GEN-CALC', name: 'Calculator FX-991', category: 'Stationery', stock: 31, threshold: 10, price: 1200, locked: false },
-];
-
 function StockBadge({ stock, threshold }) {
   if (stock === 0) return <span className="badge status-error">Depleted</span>;
   if (stock <= threshold) return <span className="badge status-pending">Low · {stock}</span>;
@@ -43,33 +26,87 @@ function StockBadge({ stock, threshold }) {
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { inventory, updateStock } = useInventory();
   const [activeTab, setActiveTab] = useState('access');
   const [pendingUsers, setPendingUsers] = useState(PENDING_USERS);
-  const [inventory, setInventory] = useState(INVENTORY);
   const [restockItem, setRestockItem] = useState(null);
-  const [restockQty, setRestockQty] = useState('');
+  const [stockInput, setStockInput] = useState('');
+  const [stockError, setStockError] = useState('');
   const [searchAccounts, setSearchAccounts] = useState('');
+  const [accounts, setAccounts] = useState(ACCOUNTS);
+  const [editingAccount, setEditingAccount] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [accessMessage, setAccessMessage] = useState('');
+
+  const metrics = useMemo(() => [
+    { label: 'Active Accounts', value: accounts.filter(account => account.status === 'ACTIVE').length, icon: 'group', color: 'var(--color-on-surface)' },
+    { label: 'Pending Auths', value: pendingUsers.length, icon: 'pending_actions', color: 'var(--color-secondary-container)' },
+    { label: 'Inventory Items', value: inventory.length, icon: 'inventory', color: 'var(--color-on-tertiary-container)' },
+    { label: 'Stock Alerts', value: inventory.filter(item => item.stock <= item.threshold).length, icon: 'warning', color: 'var(--color-error)' },
+  ], [accounts, inventory, pendingUsers]);
 
   const handleApprove = (userId) => {
+    const approvedUser = pendingUsers.find(user => user.id === userId);
+    if (!approvedUser) return;
+    setAccounts(prev => [...prev, {
+      id: `approved-${approvedUser.id}`,
+      name: approvedUser.name,
+      uid: approvedUser.email.split('@')[0],
+      dept: approvedUser.dept,
+      role: approvedUser.role,
+      lastAuth: 'Never',
+      status: 'ACTIVE',
+    }]);
     setPendingUsers(prev => prev.filter(u => u.id !== userId));
+    setAccessMessage(`${approvedUser.name} was approved and added to the accounts directory.`);
   };
 
   const handleReject = (userId) => {
+    const rejectedUser = pendingUsers.find(user => user.id === userId);
+    if (!rejectedUser) return;
     setPendingUsers(prev => prev.filter(u => u.id !== userId));
+    setAccessMessage(`${rejectedUser.name}'s authorization request was rejected.`);
   };
 
-  const handleRestock = () => {
-    if (!restockItem || !restockQty) return;
-    const qty = parseInt(restockQty, 10);
-    if (isNaN(qty) || qty <= 0) return;
-    setInventory(prev => prev.map(item =>
-      item.item_id === restockItem.item_id ? { ...item, stock: item.stock + qty } : item
-    ));
+  const openStockEditor = (item, action) => {
+    setRestockItem({ ...item, action });
+    setStockInput(action === 'adjust' ? String(item.stock) : '');
+    setStockError('');
+  };
+
+  const closeStockEditor = () => {
     setRestockItem(null);
-    setRestockQty('');
+    setStockInput('');
+    setStockError('');
   };
 
-  const filteredAccounts = ACCOUNTS.filter(a =>
+  const handleStockSave = (event) => {
+    event.preventDefault();
+    const value = Number(stockInput);
+    if (!restockItem || stockInput.trim() === '' || !Number.isInteger(value) || value < (restockItem.action === 'restock' ? 1 : 0)) {
+      setStockError(restockItem?.action === 'restock'
+        ? 'Enter a whole number of units to add (at least 1).'
+        : 'Enter a whole number of units (0 or more).');
+      return;
+    }
+
+    updateStock(restockItem.item_id, restockItem.action === 'restock' ? restockItem.stock + value : value);
+    closeStockEditor();
+  };
+
+  const handlePrivilegesSave = (event) => {
+    event.preventDefault();
+    setAccounts(prev => prev.map(account => account.id === editingAccount.id ? { ...account, role: selectedRole } : account));
+    setEditingAccount(null);
+  };
+
+  const handleAccountRevoke = (account) => {
+    setAccounts(prev => prev.map(item => item.id === account.id
+      ? { ...item, status: item.status === 'REVOKED' ? 'ACTIVE' : 'REVOKED' }
+      : item));
+  };
+
+  const filteredAccounts = accounts.filter(a =>
     !searchAccounts || a.name.toLowerCase().includes(searchAccounts.toLowerCase()) || a.uid.toLowerCase().includes(searchAccounts.toLowerCase())
   );
 
@@ -123,7 +160,7 @@ export default function AdminDashboardPage() {
 
         {/* Metrics row */}
         <div className="admin-metrics-row">
-          {DEMO_METRICS.map((m, i) => (
+          {metrics.map((m, i) => (
             <div key={i} className="admin-metric-tile card">
               <span className="material-symbols-outlined" style={{ fontSize: 24, color: m.color }}>{m.icon}</span>
               <span className="text-headline-sm text-mono-data" style={{ color: m.color }}>{m.value}</span>
@@ -147,6 +184,7 @@ export default function AdminDashboardPage() {
         {/* Access Control Tab */}
         {activeTab === 'access' && (
           <div className="admin-access-section">
+            {accessMessage && <p className="admin-form-message" role="status">{accessMessage}</p>}
             {/* Pending Approvals */}
             <div className="admin-section">
               <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>
@@ -221,11 +259,23 @@ export default function AdminDashboardPage() {
                         <td className="text-body-sm">{a.dept}</td>
                         <td><span className="badge" style={{ background: a.role === 'ADMIN' ? 'var(--color-error)' : a.role === 'STAFF' ? 'var(--color-secondary)' : 'var(--color-primary)', color: 'var(--color-on-primary)' }}>{a.role}</span></td>
                         <td className="text-mono-data" style={{ fontSize: 12 }}>{a.lastAuth}</td>
-                        <td><span className={`badge ${a.status === 'ACTIVE' ? 'status-ready' : 'status-collected'}`}>{a.status}</span></td>
+                        <td><span className={`badge ${a.status === 'ACTIVE' ? 'status-ready' : a.status === 'REVOKED' ? 'status-error' : 'status-collected'}`}>{a.status}</span></td>
                         <td>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }}>Privileges</button>
-                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11, color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>Revoke</button>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '4px 8px', fontSize: 11 }}
+                              onClick={() => { setEditingAccount(a); setSelectedRole(a.role); }}
+                            >
+                              Privileges
+                            </button>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '4px 8px', fontSize: 11, color: a.status === 'REVOKED' ? 'var(--color-on-tertiary-container)' : 'var(--color-error)', borderColor: a.status === 'REVOKED' ? 'var(--color-on-tertiary-container)' : 'var(--color-error)' }}
+                              onClick={() => handleAccountRevoke(a)}
+                            >
+                              {a.status === 'REVOKED' ? 'Restore' : 'Revoke'}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -245,20 +295,38 @@ export default function AdminDashboardPage() {
                 <span className="material-symbols-outlined" style={{ fontSize: 18, verticalAlign: 'text-bottom' }}>inventory</span> Inventory Management
               </h2>
 
-              {/* Restock drawer */}
+              {/* Stock editor */}
               {restockItem && (
                 <div className="admin-restock-drawer animate-fade-in">
-                  <h3 className="text-label-md" style={{ marginBottom: 'var(--space-sm)' }}>Restock: {restockItem.name} ({restockItem.item_id})</h3>
-                  <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end' }}>
-                    <div className="login-field" style={{ flex: 1 }}>
-                      <label className="text-label-sm">Units to Add</label>
-                      <input className="input input-mono" type="number" min="1" value={restockQty} onChange={e => setRestockQty(e.target.value)} placeholder="0" />
+                  <h3 className="text-label-md" style={{ marginBottom: 'var(--space-sm)' }}>
+                    {restockItem.action === 'restock' ? 'Restock' : 'Adjust stock'}: {restockItem.name} ({restockItem.item_id})
+                  </h3>
+                  <form onSubmit={handleStockSave}>
+                    <div className="admin-stock-editor-row">
+                      <div className="login-field" style={{ flex: 1 }}>
+                        <label className="text-label-sm" htmlFor="stock-adjustment">
+                          {restockItem.action === 'restock' ? 'Units to Add' : 'New stock level'}
+                        </label>
+                        <input
+                          id="stock-adjustment"
+                          className="input input-mono"
+                          type="number"
+                          min={restockItem.action === 'restock' ? 1 : 0}
+                          step="1"
+                          value={stockInput}
+                          onChange={event => { setStockInput(event.target.value); setStockError(''); }}
+                          placeholder={restockItem.action === 'restock' ? 'Units to add' : String(restockItem.stock)}
+                          aria-invalid={Boolean(stockError)}
+                          aria-describedby={stockError ? 'stock-error' : undefined}
+                        />
+                      </div>
+                      <button className="btn btn-success" type="submit" style={{ height: 44 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span> Save
+                      </button>
+                      <button className="btn btn-outline" type="button" onClick={closeStockEditor} style={{ height: 44 }}>Cancel</button>
                     </div>
-                    <button className="btn btn-success" onClick={handleRestock} style={{ height: 44 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_circle</span> Confirm Restock
-                    </button>
-                    <button className="btn btn-outline" onClick={() => { setRestockItem(null); setRestockQty(''); }} style={{ height: 44 }}>Cancel</button>
-                  </div>
+                    {stockError && <p id="stock-error" className="admin-form-error" role="alert">{stockError}</p>}
+                  </form>
                 </div>
               )}
 
@@ -284,7 +352,7 @@ export default function AdminDashboardPage() {
                         <td><StockBadge stock={item.stock} threshold={item.threshold} /></td>
                         <td className="text-mono-data">₹{item.price}</td>
                         <td>
-                          {item.locked ? (
+                          {item.stock === 0 ? (
                             <span className="badge status-error" style={{ fontSize: 10 }}>
                               <span className="material-symbols-outlined" style={{ fontSize: 12 }}>lock</span> LOCKED
                             </span>
@@ -294,10 +362,10 @@ export default function AdminDashboardPage() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setRestockItem(item)}>
+                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => openStockEditor(item, 'restock')}>
                               <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add</span> Restock
                             </button>
-                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }}>Adjust</button>
+                            <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => openStockEditor(item, 'adjust')}>Adjust</button>
                           </div>
                         </td>
                       </tr>
@@ -309,14 +377,72 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Analytics Tab (placeholder) */}
+        {/* Analytics */}
         {activeTab === 'analytics' && (
-          <div className="admin-section" style={{ textAlign: 'center', padding: 'var(--space-xl)' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 48, color: 'var(--color-outline-variant)' }}>bar_chart</span>
-            <p className="text-body-md" style={{ color: 'var(--color-outline)', marginTop: 'var(--space-sm)' }}>Analytics dashboard — coming in Phase 6</p>
+          <div className="admin-section">
+            <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>Inventory Overview</h2>
+            <div className="admin-metrics-row">
+              <div className="admin-metric-tile card">
+                <span className="text-headline-sm text-mono-data">{inventory.reduce((total, item) => total + item.stock, 0)}</span>
+                <span className="text-label-sm">Units in stock</span>
+              </div>
+              <div className="admin-metric-tile card">
+                <span className="text-headline-sm text-mono-data">{inventory.filter(item => item.stock === 0).length}</span>
+                <span className="text-label-sm">Depleted items</span>
+              </div>
+              <div className="admin-metric-tile card">
+                <span className="text-headline-sm text-mono-data">{inventory.filter(item => item.stock > 0 && item.stock <= item.threshold).length}</span>
+                <span className="text-label-sm">Low-stock items</span>
+              </div>
+              <div className="admin-metric-tile card">
+                <span className="text-headline-sm text-mono-data">₹{inventory.reduce((total, item) => total + item.stock * item.price, 0).toLocaleString('en-IN')}</span>
+                <span className="text-label-sm">Inventory value</span>
+              </div>
+            </div>
+            <div className="admin-accounts-table-wrap">
+              <table className="admin-accounts-table">
+                <thead><tr><th>Item</th><th>Category</th><th>Units</th><th>Stock value</th></tr></thead>
+                <tbody>
+                  {inventory.map(item => (
+                    <tr key={item.item_id}>
+                      <td>{item.name}</td>
+                      <td>{item.category}</td>
+                      <td><StockBadge stock={item.stock} threshold={item.threshold} /></td>
+                      <td className="text-mono-data">₹{(item.stock * item.price).toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
+      {editingAccount && (
+        <div className="admin-dialog-backdrop" onMouseDown={event => event.target === event.currentTarget && setEditingAccount(null)}>
+          <form
+            className="admin-dialog card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-privileges-title"
+            onSubmit={handlePrivilegesSave}
+          >
+            <h2 id="account-privileges-title" className="text-title">Edit privileges</h2>
+            <p className="text-body-sm">Choose the role for {editingAccount.name} ({editingAccount.uid}).</p>
+            <label className="login-field">
+              <span className="text-label-sm">Account role</span>
+              <select className="input" value={selectedRole} onChange={event => setSelectedRole(event.target.value)}>
+                <option value="STUDENT">Student</option>
+                <option value="STAFF">Staff</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </label>
+            <div className="admin-dialog-actions">
+              <button className="btn btn-outline" type="button" onClick={() => setEditingAccount(null)}>Cancel</button>
+              <button className="btn btn-primary" type="submit">Save privileges</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -25,6 +25,18 @@ export default function StaffDashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState(DEMO_ORDERS[0]);
   const [orders, setOrders] = useState(DEMO_ORDERS);
   const [bagChecks, setBagChecks] = useState({});
+  const [activeView, setActiveView] = useState('orders');
+  const [tokenError, setTokenError] = useState('');
+  const [showDiscrepancyForm, setShowDiscrepancyForm] = useState(false);
+  const [discrepancyText, setDiscrepancyText] = useState('');
+  const [discrepancyMessage, setDiscrepancyMessage] = useState('');
+
+  const getVisibleOrders = (view, source = orders) => {
+    if (view === 'history') return source.filter(order => order.status === 'COLLECTED');
+    if (view === 'alerts') return source.filter(order => order.status !== 'COLLECTED' || order.discrepancy);
+    return source;
+  };
+  const visibleOrders = getVisibleOrders(activeView);
 
   const stats = {
     pending: orders.filter(o => o.status === 'QUEUED' || o.status === 'PREPARING').length,
@@ -34,11 +46,26 @@ export default function StaffDashboardPage() {
   };
 
   const handleFetchToken = () => {
-    const found = orders.find(o => o.token === tokenInput.trim());
-    if (found) setSelectedOrder(found);
+    const found = orders.find(o => o.token.toUpperCase() === tokenInput.trim().toUpperCase());
+    if (found) {
+      setSelectedOrder(found);
+      setTokenError('');
+      setDiscrepancyMessage('');
+    } else {
+      setTokenError('No order was found for that token.');
+    }
+  };
+
+  const handleViewChange = (view) => {
+    setActiveView(view);
+    setSelectedOrder(getVisibleOrders(view)[0] || null);
+    setShowDiscrepancyForm(false);
+    setDiscrepancyText('');
+    setDiscrepancyMessage('');
   };
 
   const handleCollect = (orderId) => {
+    if (!selectedOrder?.items.every((_, index) => bagChecks[`${orderId}-${index}`])) return;
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'COLLECTED' } : o));
     setSelectedOrder(prev => prev?.order_id === orderId ? { ...prev, status: 'COLLECTED' } : prev);
   };
@@ -48,6 +75,18 @@ export default function StaffDashboardPage() {
       ...prev,
       [`${orderId}-${itemIdx}`]: !prev[`${orderId}-${itemIdx}`],
     }));
+  };
+
+  const handleDiscrepancySubmit = (event) => {
+    event.preventDefault();
+    const note = discrepancyText.trim();
+    if (!selectedOrder || !note) return;
+    const updatedOrder = { ...selectedOrder, discrepancy: note };
+    setOrders(prev => prev.map(order => order.order_id === selectedOrder.order_id ? updatedOrder : order));
+    setSelectedOrder(updatedOrder);
+    setDiscrepancyText('');
+    setShowDiscrepancyForm(false);
+    setDiscrepancyMessage('Discrepancy recorded for this order.');
   };
 
   return (
@@ -64,13 +103,13 @@ export default function StaffDashboardPage() {
           </div>
         </div>
         <nav className="staff-nav">
-          <button className="staff-nav-btn active">
+          <button className={`staff-nav-btn ${activeView === 'orders' ? 'active' : ''}`} onClick={() => handleViewChange('orders')}>
             <span className="material-symbols-outlined">inventory_2</span> Orders
           </button>
-          <button className="staff-nav-btn">
+          <button className={`staff-nav-btn ${activeView === 'history' ? 'active' : ''}`} onClick={() => handleViewChange('history')}>
             <span className="material-symbols-outlined">history</span> History
           </button>
-          <button className="staff-nav-btn">
+          <button className={`staff-nav-btn ${activeView === 'alerts' ? 'active' : ''}`} onClick={() => handleViewChange('alerts')}>
             <span className="material-symbols-outlined">notifications</span> Alerts
           </button>
         </nav>
@@ -113,6 +152,7 @@ export default function StaffDashboardPage() {
             </button>
           </div>
         </div>
+        {tokenError && <p className="staff-inline-message" role="alert">{tokenError}</p>}
 
         {/* Quick stats */}
         <div className="staff-stats-strip">
@@ -139,14 +179,22 @@ export default function StaffDashboardPage() {
           {/* Order queue */}
           <div className="staff-queue-col">
             <h2 className="text-title" style={{ marginBottom: 'var(--space-sm)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, verticalAlign: 'text-bottom' }}>list_alt</span> Order Queue
+              <span className="material-symbols-outlined" style={{ fontSize: 18, verticalAlign: 'text-bottom' }}>list_alt</span>{' '}
+              {activeView === 'history' ? 'Collected Orders' : activeView === 'alerts' ? 'Order Alerts' : 'Order Queue'}
             </h2>
             <div className="staff-order-list">
-              {orders.map(order => (
-                <div
+              {visibleOrders.map(order => (
+                <button
+                  type="button"
                   key={order.order_id}
                   className={`staff-order-card card ${selectedOrder?.order_id === order.order_id ? 'selected' : ''}`}
-                  onClick={() => setSelectedOrder(order)}
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setShowDiscrepancyForm(false);
+                    setDiscrepancyText('');
+                    setDiscrepancyMessage('');
+                  }}
+                  aria-pressed={selectedOrder?.order_id === order.order_id}
                 >
                   <div className="staff-order-card-top">
                     <span className="text-mono-data" style={{ fontWeight: 700 }}>{order.order_id}</span>
@@ -157,8 +205,10 @@ export default function StaffDashboardPage() {
                     <span className="text-body-sm" style={{ color: 'var(--color-outline)' }}>{order.dept} · {order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
                     <span className="text-mono-data" style={{ color: 'var(--color-outline)' }}>₹{order.total}</span>
                   </div>
-                </div>
+                  {order.discrepancy && <p className="staff-discrepancy-note">Issue: {order.discrepancy}</p>}
+                </button>
               ))}
+              {visibleOrders.length === 0 && <p className="staff-inline-message">No orders in this view.</p>}
             </div>
           </div>
 
@@ -170,6 +220,10 @@ export default function StaffDashboardPage() {
                   <h2 className="text-title">Order Verification</h2>
                   <span className={`badge ${STATUS_MAP[selectedOrder.status].className}`}>{STATUS_MAP[selectedOrder.status].label}</span>
                 </div>
+                {discrepancyMessage && <p className="staff-inline-message" role="status">{discrepancyMessage}</p>}
+                {selectedOrder.discrepancy && (
+                  <p className="staff-discrepancy-note">Reported issue: {selectedOrder.discrepancy}</p>
+                )}
 
                 {/* Student card */}
                 <div className="staff-student-card">
@@ -219,27 +273,50 @@ export default function StaffDashboardPage() {
                 {/* Action buttons */}
                 <div className="staff-actions">
                   {selectedOrder.status !== 'COLLECTED' ? (
-                    <>
-                      <button className="btn btn-success" style={{ flex: 2 }} onClick={() => handleCollect(selectedOrder.order_id)}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
-                        Handover & Complete Order
-                      </button>
-                      <button className="btn btn-primary" style={{ flex: 1 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>print</span>
-                        Print Slip
-                      </button>
-                      <button className="btn btn-error" style={{ flex: 1 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>flag</span>
-                        Discrepancy
-                      </button>
-                    </>
+                    <button
+                      className="btn btn-success"
+                      style={{ flex: 2 }}
+                      onClick={() => handleCollect(selectedOrder.order_id)}
+                      disabled={!selectedOrder.items.every((_, index) => bagChecks[`${selectedOrder.order_id}-${index}`])}
+                      title="Check off every item before completing handover."
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
+                      Handover & Complete Order
+                    </button>
                   ) : (
                     <div className="staff-collected-msg">
                       <span className="material-symbols-outlined" style={{ fontSize: 24, color: 'var(--color-on-tertiary-container)' }}>task_alt</span>
                       <span className="text-label-md">Order Collected Successfully</span>
                     </div>
                   )}
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => window.print()}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>print</span>
+                    Print Slip
+                  </button>
+                  <button className="btn btn-error" style={{ flex: 1 }} onClick={() => { setShowDiscrepancyForm(value => !value); setDiscrepancyMessage(''); }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>flag</span>
+                    Discrepancy
+                  </button>
                 </div>
+                {showDiscrepancyForm && (
+                  <form className="staff-discrepancy-form" onSubmit={handleDiscrepancySubmit}>
+                    <label className="login-field">
+                      <span className="text-label-md">Describe the issue</span>
+                      <textarea
+                        className="input"
+                        value={discrepancyText}
+                        onChange={event => setDiscrepancyText(event.target.value)}
+                        rows={3}
+                        maxLength={500}
+                        required
+                      />
+                    </label>
+                    <div className="staff-discrepancy-actions">
+                      <button type="button" className="btn btn-outline" onClick={() => { setShowDiscrepancyForm(false); setDiscrepancyText(''); }}>Cancel</button>
+                      <button type="submit" className="btn btn-error">Record discrepancy</button>
+                    </div>
+                  </form>
+                )}
               </>
             ) : (
               <div className="staff-no-selection">

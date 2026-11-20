@@ -6,8 +6,9 @@ import StaffDashboardPage from './pages/StaffDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
 function ProtectedRoute({ children, allowedRoles }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
+  if (loading) return null;
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
